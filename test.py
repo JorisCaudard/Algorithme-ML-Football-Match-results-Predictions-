@@ -1,32 +1,34 @@
-from statsbombpy import sb
-import pandas as pd
 import numpy as np
+import pandas as pd
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+import xgboost as xgb
 
-df = sb.events(match_id=3890561)
+# Load the dataset
+iris = load_iris()
+X = iris.data
+y = iris.target
 
-print(df.shape)
+print(y)
 
-df = df.loc[df['period'] == 1]
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-print(df.shape)
+# Create an instance of XGBClassifier
+xgb_model = xgb.XGBClassifier(n_estimators=100, max_depth=3, learning_rate=0.1)
 
-EventCountByTeam = df.groupby(by=['team', 'type'])['type'].count().unstack(level=1)
+# Fit the model on the training data
+xgb_model.fit(X_train, y_train)
 
-EVENT_NAMES = ["Ball Receipt*", "Ball Recovery", "Dispossessed", "Duel", "Camera On", "Block", "Offside", "Clearance", "Interception", "Dribbe", "Shot", "Pressure", "Substitution", "Own Goal Against", "Foul Won", "Foul Committed", "Goal Keeper", "Bad Behaviour", "Player On", "Player Off", "Shield", "Pass", "50/50", "Tactical Shift", "Error", "Miscontrol", 'Dribble', "Dribbled Past", "Injury Stoppage", "Referee Ball-Drop", "Carry"]
+# Make predictions on the test data
+y_pred = xgb_model.predict(X_test)
 
-TEAM_NAME = "Hoffenheim"
+# Evaluate the model's performance
+accuracy = accuracy_score(y_test, y_pred)
+confusion = confusion_matrix(y_test, y_pred)
+classification_rep = classification_report(y_test, y_pred)
 
-#print(EventCountByTeam.loc['Hoffenheim'].index)
-print(EventCountByTeam.columns)
-
-dfTest = pd.DataFrame(index = [TEAM_NAME])
-
-try :
-    for name in EVENT_NAMES:
-        dfTest.loc[TEAM_NAME, TEAM_NAME + "-" + name] = int(EventCountByTeam.loc[TEAM_NAME, name]) if name in EventCountByTeam.loc[TEAM_NAME].index else np.nan
-    print(dfTest)
-
-except:
-    print("Oopsie !")
-
-print(dfTest['Hoffenheim-Dribbled Past'])
+print("Accuracy:", accuracy)
+print("Confusion Matrix:\n", confusion)
+print("Classification Report:\n", classification_rep)
